@@ -1,13 +1,68 @@
-# VitsGradio
-VitsWebUi
+# How to use
+(Suggestion) Python == 3.7
+## Clone this repository
+```sh
+git clone https://github.com/CjangCjengh/vits.git
+```
+## Choose cleaners
+- Fill "text_cleaners" in config.json
+- Edit text/symbols.py
+- Remove unnecessary imports from text/cleaners.py
+## Install requirements
+```sh
+pip install -r requirements.txt
+```
+## Create datasets
+### Single speaker
+"n_speakers" should be 0 in config.json
+```
+path/to/XXX.wav|transcript
+```
+- Example
+```
+dataset/001.wav|こんにちは。
+```
+### Mutiple speakers
+Speaker id should start from 0 
+```
+path/to/XXX.wav|speaker id|transcript
+```
+- Example
+```
+dataset/001.wav|0|こんにちは。
+```
+## Preprocess
+If you have done this, set "cleaned_text" to true in config.json
+```sh
+# Single speaker
+python preprocess.py --text_index 1 --filelists path/to/filelist_train.txt path/to/filelist_val.txt
 
+# Mutiple speakers
+python preprocess.py --text_index 2 --filelists path/to/filelist_train.txt path/to/filelist_val.txt
+```
+## Build monotonic alignment search
+```sh
+cd monotonic_align
+python setup.py build_ext --inplace
+cd ..
+```
+## Train
+```sh
+# Single speaker
+python train.py -c <config> -m <folder>
 
-使用方法：
-- 安装Python
-- Shift+右键该文件夹空白处，选择PowerShell
-- 输入pip install -r requirements.txt -i https://mirrors.aliyun.com/pypi/simple回车
-- 等待环境安装完成
-- 输入python vits_gradio.py，浏览器中打开http://127.0.0.1:7860/
-- 在第三栏中选择模型和设备并点击载入模型按钮，即可回到前两个界面推理
+# Mutiple speakers
+python train_ms.py -c <config> -m <folder>
+```
+## Inference
+### Online
+See [inference.ipynb](inference.ipynb)
+### Offline
+See [MoeGoe](https://github.com/CjangCjengh/MoeGoe)
 
-注意：如果是单角色模型，语音转换部分将不可见。
+# Running in Docker
+
+```sh
+docker run -itd --gpus all --name "Container name" -e NVIDIA_DRIVER_CAPABILITIES=compute,utility -e NVIDIA_VISIBLE_DEVICES=all "Image name"
+```
+
