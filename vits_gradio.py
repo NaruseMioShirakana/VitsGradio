@@ -14,17 +14,14 @@ class VitsGradio:
             with gr.Tab("TextToSpeech"):
                 with gr.Row() as self.TextToSpeech:
                     with gr.Column():
-                        with gr.Row():
-                            self.text = gr.Textbox(label = "需要转换的文本")
-                            self.sid = gr.Dropdown(label = "角色", choices = self.lspk)
-                        with gr.Row():
-                            self.ns = gr.Slider(label = "噪声规模", maximum = 1, minimum = 0.0001, step = 0.0001, value = 0.667)
-                            self.nsw = gr.Slider(label = "dp噪声规模", maximum = 1, minimum = 0.0001, step = 0.0001, value = 0.8)
-                            self.ls = gr.Slider(label = "长度规模", maximum = 10, minimum = 0.0001, step = 0.0001, value = 1.0)
-                        with gr.Row():
-                            self.btnTTS = gr.Button("文本转语音")
-                        with gr.Row():
-                            self.TTSOutputs = gr.Audio()
+                        self.text = gr.Textbox(label = "需要转换的文本", lines = 14, max_lines = 100)
+                    with gr.Column():
+                        self.sid = gr.Dropdown(label = "角色", choices = self.lspk)
+                        self.ns = gr.Slider(label = "噪声规模", maximum = 1, minimum = 0.0001, step = 0.0001, value = 0.667)
+                        self.nsw = gr.Slider(label = "dp噪声规模", maximum = 1, minimum = 0.0001, step = 0.0001, value = 0.8)
+                        self.ls = gr.Slider(label = "长度规模", maximum = 10, minimum = 0.0001, step = 0.0001, value = 1.0)
+                        self.btnTTS = gr.Button("文本转语音")
+                self.TTSOutputs = gr.Audio()
                 self.btnTTS.click(self.vits_ins.infer, inputs=[self.text,self.sid,self.ns,self.nsw,self.ls], outputs=[self.TTSOutputs])
             with gr.Tab("VoiceConversion"):
                 with gr.Row(visible=False) as self.VoiceConversion:
@@ -47,6 +44,7 @@ class VitsGradio:
                     btnMod.click(self.loadModel, inputs=[modelstrs,devicestrs], outputs = [self.sid,self.ssid,self.dsid,self.VoiceConversion])
 
     def loadModel(self, path, device):
+        self.lspk = []
         self.vits_ins.set_device(device)
         self.vits_ins.loadCheckpoint(path)
         for spk in self.vits_ins.hps.speakers:

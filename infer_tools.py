@@ -2,6 +2,7 @@ import os
 import json
 import math
 import torch
+import numpy as np
 from torch import nn
 from torch.nn import functional as F
 from torch.utils.data import DataLoader
@@ -30,7 +31,7 @@ class vits:
     def set_device(self, device):
         self.device = torch.device(device)
         if self.net_g != None:
-            net_g.to(self.device)
+            self.net_g.to(self.device)
 
     def loadCheckpoint(self, name):
         self.hps = utils.get_hparams_from_file(f"checkpoints/{name}/config.json")
@@ -49,22 +50,35 @@ class vits:
                 **self.hps.model).to(self.device)
         _ = self.net_g.eval()
         _ = utils.load_checkpoint(f"checkpoints/{name}/model.pth", self.net_g, None)
+        self.net_g.to(self.device)
 
     def infer(self, text, sid=None, noise_scale=1, noise_scale_w=1., length_scale=1):
-        stn_tst = get_text(text, self.hps)
-        with torch.no_grad():
-            x_tst = stn_tst.to(self.device).unsqueeze(0)
-            x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(self.device)
-            if self.hps.data.n_speakers == 0:
-                tsid = None
+        rawText = ""
+        TextList = []
+        audio = []
+        for chara in text:
+            if chara == '\n' or chara == '\r':
+                TextList.append(rawText)
+                rawText = ""
             else:
-                tsid = torch.LongTensor([self.hps.speakers.index(sid)]).to(self.device)
-            audio = self.net_g.infer(x_tst, 
-                x_tst_lengths, 
-                sid = tsid, 
-                noise_scale = noise_scale, 
-                noise_scale_w = noise_scale_w, 
-                length_scale = length_scale)[0][0,0].data.cpu().float().numpy()
+                rawText = rawText + chara
+        for lineText in TextList:
+            stn_tst = get_text(lineText, self.hps)
+            with torch.no_grad():
+                x_tst = stn_tst.to(self.device).unsqueeze(0)
+                x_tst_lengths = torch.LongTensor([stn_tst.size(0)]).to(self.device)
+                if self.hps.data.n_speakers == 0:
+                    tsid = None
+                else:
+                    tsid = torch.LongTensor([self.hps.speakers.index(sid)]).to(self.device)
+                rawaudio = self.net_g.infer(x_tst, 
+                    x_tst_lengths, 
+                    sid = tsid, 
+                    noise_scale = noise_scale, 
+                    noise_scale_w = noise_scale_w, 
+                    length_scale = length_scale)[0][0,0].data.cpu().float().numpy()
+                audio.extend(list(rawaudio))
+        audio = (np.array(audio) * 32768.0).astype('int16')
         return (self.hps.data.sampling_rate, audio)
 
     def VC(self, audio, src_cha, dst_cha):
